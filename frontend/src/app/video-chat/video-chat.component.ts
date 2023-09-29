@@ -9,8 +9,8 @@ import { Socket, io } from "socket.io-client";
 export class VideoChatComponent implements OnInit, AfterViewInit {
   constructor() { }
 
-  video: MediaStream;
-  audio: MediaStream;
+  localStream: MediaStream;
+  remoteStream: MediaStream;
 
   @ViewChild('local_video') localVideo: ElementRef;
   @ViewChild('remote_video') remoteVideo: ElementRef;
@@ -20,18 +20,26 @@ export class VideoChatComponent implements OnInit, AfterViewInit {
   list: MediaDeviceInfo[];
   selectedCam: string;
 
+
   ngOnInit(): void {
 
   }
 
-  print() {
+  mute() {
 
-    console.log(this.remoteVideo?.nativeElement?.srcObject);
+    this.localStream.getTracks().forEach(x => {
+      console.log(x);
+      if(x.kind == 'audio'){
+        x.enabled = !x.enabled
+      }
+      console.log(x);
+
+    })
 
   }
   ngAfterViewInit(): void {
     this.getCamList();
-    this.GetUserAudioMedia()
+    this.GetUserMedia()
 
     this.socket = io("ws://localhost:3000", { transports: ["websocket"] });
 
@@ -61,11 +69,11 @@ export class VideoChatComponent implements OnInit, AfterViewInit {
 
       this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
         .then(() => {
-          this.localVideo.nativeElement.srcObject = this.video;
+          this.localVideo.nativeElement.srcObject = this.localStream;
 
-          this.video.getTracks().forEach(track => {
+          this.localStream.getTracks().forEach(track => {
             try {
-              this.peerConnection.addTrack(track, this.video)
+              this.peerConnection.addTrack(track, this.localStream)
             } catch {
 
             }
@@ -94,41 +102,33 @@ export class VideoChatComponent implements OnInit, AfterViewInit {
     this.selectedCam = this.list[0].deviceId;
   }
 
-  async GetUserVideoMedia() {
-    this.video = await navigator.mediaDevices.getUserMedia({
+  async GetUserMedia() {
+    this.localStream = await navigator.mediaDevices.getUserMedia({
       video: {
         aspectRatio: 16 / 9,
         deviceId: this.selectedCam
+      },
+      audio: {
+        noiseSuppression: true
       }
     })
-    const tracks = this.video.getTracks();
+    const tracks = this.localStream.getTracks();
     for (let track of tracks) {
       track.enabled = true;
     }
   }
 
-  async GetUserAudioMedia() {
-    navigator.mediaDevices.getUserMedia({
-      audio: {
-        noiseSuppression: true
-      }
-    }).then(response => {
-      this.audio = response;
-    }).catch(err => {
-      console.error(err);
-    })
-  }
 
   async OpenCam() {
-    await this.GetUserVideoMedia();
-    this.localVideo.nativeElement.srcObject = this.video
+    await this.GetUserMedia();
+    this.localVideo.nativeElement.srcObject = this.localStream
   }
 
   async startVideoCall() {
     this.createPeerConnection();
 
-    this.video.getTracks().forEach(track => {
-      this.peerConnection.addTrack(track, this.video)
+    this.localStream.getTracks().forEach(track => {
+      this.peerConnection.addTrack(track, this.localStream)
     })
 
     const offer: RTCSessionDescriptionInit = await this.peerConnection.createOffer(offerOptions);
