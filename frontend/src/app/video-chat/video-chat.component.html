@@ -1,0 +1,16 @@
+<select [(ngModel)]="selectedCam">
+    <option *ngFor="let item of list" [value]="item.deviceId">{{item.label}}</option>
+</select>
+
+<div class="m-2">
+    <video #local_video [autoplay]="true" [muted]="true" class="w-96 h-64 shadow-md rounded-md"></video>
+    <button class="my-2 bg-green-300 px-2 py-1 rounded-lg font-semibold shadow-md hover:scale-105 duration-200" (click)="OpenCam()"> Camera</button>
+    <button class="my-2 bg-red-300 px-2 py-1 rounded-lg font-semibold shadow-md hover:scale-105 duration-200" (click)="startVideoCall()"> Start Video Call</button>
+</div>
+
+
+<div class="w-96 h-64 bg-gray-400 shadow-md rounded-md m-2">
+    <video #remote_video [autoplay]="true" class="w-96 h-64 shadow-md rounded-md"></video>
+</div>
+
+<button class="my-2 bg-red-300 px-2 py-1 rounded-lg font-semibold shadow-md hover:scale-105 duration-200" (click)="print()"> Print</button>
